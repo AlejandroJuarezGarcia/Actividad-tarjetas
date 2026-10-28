@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Memorama de atajos de Excel</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#f2f6f3;--surface:#fff;--ink:#12261b;--muted:#4b5f54;--green:#1e6e42;--line:#c5d3ca;--ok:#157a38;--back:#c8d0da;--backink:#6b7a8c;--cmd:#dff1e6;--cmdink:#0f3d24;--desc:#fff;--descink:#1b2a22;--descline:#c5d3ca;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f1a14;--surface:#1a2a21;--ink:#e6f1ea;--muted:#9db3a5;--green:#3aa56b;--line:#2f4538;--ok:#4cd37f;--back:#34414f;--backink:#8d9db0;--cmd:#1f4a32;--cmdink:#e6f6ec;--desc:#1f2f26;--descink:#e6f1ea;--descline:#3a5446}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f1a14;--surface:#1a2a21;--ink:#e6f1ea;--muted:#9db3a5;--green:#3aa56b;--line:#2f4538;--ok:#4cd37f;--back:#34414f;--backink:#8d9db0;--cmd:#1f4a32;--cmdink:#e6f6ec;--desc:#1f2f26;--descink:#e6f1ea;--descline:#3a5446}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 "Nunito Sans",system-ui,"Segoe UI",sans-serif}
+main{max-width:900px;margin:0 auto;padding:22px 16px 36px}
+h1{font-size:1.6rem;line-height:1.2;margin:0 0 6px;font-weight:800}
+.lead{margin:0 0 14px;color:var(--muted);max-width:66ch}
+.stats{display:flex;gap:18px;flex-wrap:wrap;margin-bottom:14px;font-weight:600}
+.stats span b{color:var(--green)}
+.board{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.card{perspective:900px;aspect-ratio:1/1;background:none;border:0;padding:0;cursor:pointer;font:inherit;color:inherit;-webkit-tap-highlight-color:transparent}
+.card:focus-visible{outline:3px solid var(--green);outline-offset:3px;border-radius:18px}
+.inner{position:relative;display:block;width:100%;height:100%;transform-style:preserve-3d;transition:transform .5s}
+.card.flip .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;border-radius:18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center;padding:10px}
+.back{background:var(--back);color:var(--backink)}
+.back svg{width:38%;height:auto}
+.front{transform:rotateY(180deg);border:3px solid transparent}
+.cmd .front{background:var(--cmd);color:var(--cmdink)}
+.desc .front{background:var(--desc);color:var(--descink);border-color:var(--descline)}
+.tag{font-size:clamp(8px,1.3vw,11px);font-weight:800;letter-spacing:.08em;text-transform:uppercase;opacity:.7}
+.txt{font-weight:800;font-size:clamp(12px,2.2vw,19px);line-height:1.2}
+.desc .txt{font-weight:600;font-size:clamp(11px,1.9vw,16px)}
+.card.matched{pointer-events:none}
+.card.matched .front{border-color:var(--ok)}
+.card.matched .front::after{content:"✓";position:absolute;top:6px;right:9px;font-weight:800;color:var(--ok)}
+#end{display:none;margin-top:18px;padding:18px;border-radius:12px;background:var(--surface);border:2px solid var(--green);text-align:center}
+#end.show{display:block}
+#end strong{display:block;font-size:1.4rem;margin-bottom:4px}
+#end p{margin:0 0 12px;color:var(--muted)}
+button.retry{font:inherit;font-weight:800;border:0;border-radius:8px;padding:11px 28px;background:var(--green);color:#fff;cursor:pointer}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) button.retry{color:#08140d}}
+:root[data-theme="dark"] button.retry{color:#08140d}
+button.retry:focus-visible{outline:3px solid var(--green);outline-offset:2px}
+@media (max-width:560px){.board{grid-template-columns:repeat(3,1fr);gap:8px}.card{aspect-ratio:3/4}.face{border-radius:12px;padding:6px}}
+@media (prefers-reduced-motion:reduce){.inner{transition:none}}
+@media (prefers-reduced-motion:no-preference){#end.show{animation:pop .25s ease-out}@keyframes pop{from{transform:scale(.97);opacity:0}}}
+</style>
+</head>
+<body>
+<main>
+<h1>Memorama de atajos de Excel</h1>
+<p class="lead">Voltea dos tarjetas a la vez y encuentra cada comando con su descripción. Si coinciden, se quedan levantadas; si no, se vuelven a voltear.</p>
+<div class="stats"><span>Intentos: <b id="tries">0</b></span><span>Parejas: <b id="found">0</b> de 6</span></div>
+<div class="board" id="board"></div>
+<div id="end" role="status" aria-live="polite"><strong>¡Actividad finalizada!</strong><p id="endmsg"></p><button class="retry" id="retry" type="button">Reintentar</button></div>
+</main>
+<script>
+var PAIRS=[
+ ["Ctrl + Flechas","Navegación al último dato de la fila o columna"],
+ ["Ctrl + Inicio","Desplazamiento a la primera celda (A1)"],
+ ["Ctrl + Fin","Desplazamiento a la última celda con formato"],
+ ["Ctrl + C / Ctrl + V","Copiar o pegar datos entre celdas"],
+ ["Ctrl + Z / Ctrl + Y","Deshacer acción o rehacer acción"],
+ ["Ctrl + G","Guardar avances"]
+];
+var board=document.getElementById("board"),endBox=document.getElementById("end"),triesEl=document.getElementById("tries"),foundEl=document.getElementById("found");
+var first=null,lock=false,tries=0,found=0;
+var ICON='<svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><rect x="4" y="4" width="32" height="32" rx="4"/><path d="M4 15h32M4 26h32M15 4v32M26 4v32"/></svg>';
+function build(){
+  first=null;lock=false;tries=0;found=0;
+  triesEl.textContent=0;foundEl.textContent=0;endBox.className="";board.innerHTML="";
+  var cards=[];
+  PAIRS.forEach(function(p,i){cards.push({pair:i,type:"cmd",text:p[0],tag:"Comando"});cards.push({pair:i,type:"desc",text:p[1],tag:"Descripción"})});
+  for(var i=cards.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=cards[i];cards[i]=cards[j];cards[j]=t}
+  cards.forEach(function(c){
+    var b=document.createElement("button");b.type="button";b.className="card "+c.type;b.dataset.pair=c.pair;
+    b.setAttribute("aria-label","Tarjeta boca abajo");
+    b.innerHTML='<span class="inner"><span class="face back">'+ICON+'</span><span class="face front"><span class="tag">'+c.tag+'</span><span class="txt"></span></span></span>';
+    b.querySelector(".txt").textContent=c.text;
+    b.addEventListener("click",function(){flip(b,c)});
+    board.appendChild(b);
+  });
+}
+function flip(b,c){
+  if(lock||b.classList.contains("flip"))return;
+  b.classList.add("flip");b.setAttribute("aria-label",c.tag+": "+c.text);
+  if(!first){first=b;return}
+  var a=first;first=null;tries++;triesEl.textContent=tries;
+  if(a.dataset.pair===b.dataset.pair){
+    a.classList.add("matched");b.classList.add("matched");found++;foundEl.textContent=found;
+    if(found===PAIRS.length)setTimeout(finish,600);
+  }else{
+    lock=true;
+    setTimeout(function(){
+      [a,b].forEach(function(x){x.classList.remove("flip");x.setAttribute("aria-label","Tarjeta boca abajo")});
+      lock=false;
+    },1000);
+  }
+}
+function finish(){
+  document.getElementById("endmsg").textContent="Encontraste las "+PAIRS.length+" parejas en "+tries+" intentos.";
+  endBox.className="show";
+  endBox.scrollIntoView({behavior:"smooth",block:"nearest"});
+}
+document.getElementById("retry").addEventListener("click",build);
+build();
+</script>
+</body>
+</html>
